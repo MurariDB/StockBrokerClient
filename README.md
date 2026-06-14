@@ -1,65 +1,59 @@
-# StockPulse - Real-Time Stock Broker Client Dashboard
+# StockPulse — Real-Time Stock Broker Client Dashboard
 
-A real-time stock dashboard built using React, Node.js, Express, and Socket.IO. Users can subscribe to stock tickers and receive live price updates without refreshing the page.
+StockPulse is a real-time stock dashboard built with React, Node.js, Express, and Socket.IO. It allows users to log in with an email, subscribe to supported stock tickers, and view live price updates without refreshing the page.
 
-## Assignment Requirements Coverage
+## Overview
 
-| Requirement                            | Status |
-| -------------------------------------- | ------ |
-| Email-based login                      | ✅      |
-| Support 5 stock tickers                | ✅      |
-| Subscribe to stocks                    | ✅      |
-| Real-time updates without page refresh | ✅      |
-| Random stock price generation          | ✅      |
-| Multiple users supported               | ✅      |
-| Independent subscriptions per user     | ✅      |
-| Asynchronous live updates              | ✅      |
+This project was built to demonstrate:
+- real-time client-server communication,
+- user-specific stock subscriptions,
+- live UI updates,
+- and a clean dashboard experience for multiple users.
 
----
+Stock prices are simulated on the server and updated every second so the app behaves like a live market dashboard without relying on external APIs.
 
 ## Features
 
-* Email-based user login
-* Subscribe/unsubscribe to stocks
-* Real-time stock price updates using Socket.IO
-* Support for multiple concurrent users
-* Independent watchlists per user
-* Automatic stock price simulation every second
-* Live market feed dashboard
-* Watchlist statistics
-* Sparkline price trend visualization
-* Dark/Light mode toggle
-* Responsive user interface
-* Local storage persistence
-
----
+- Email-based login.
+- Subscribe and unsubscribe to supported stock tickers.
+- Live price updates without page refresh.
+- Multiple users supported at the same time.
+- Separate watchlists for each user.
+- Server-side stock price simulation.
+- Responsive dashboard UI.
+- Local storage persistence for session data.
+- Lightweight sparkline charts for price trends.
+- Dark and light mode support.
 
 ## Supported Stocks
 
-* GOOG
-* TSLA
-* AMZN
-* META
-* NVDA
-
----
+The dashboard currently supports the following tickers:
+- GOOG
+- TSLA
+- AMZN
+- META
+- NVDA
 
 ## Tech Stack
 
 ### Frontend
-
-* React
-* Vite
-* Socket.IO Client
-* CSS
+- React
+- Vite
+- Socket.IO Client
+- CSS
 
 ### Backend
+- Node.js
+- Express.js
+- Socket.IO
 
-* Node.js
-* Express.js
-* Socket.IO
+## How It Works
 
----
+1. A user logs in using an email address.
+2. The user subscribes to one or more supported stock tickers.
+3. The server generates simulated price changes every second.
+4. Updated prices are broadcast to connected clients through Socket.IO.
+5. Each user sees only the stocks they subscribed to.
 
 ## Architecture
 
@@ -72,132 +66,95 @@ Node.js + Express Server
       │
       ▼
 Stock Price Simulator
-(Random Updates Every Second)
+(Random updates every second)
 ```
 
-### Workflow
+## Design Decisions
 
-1. User logs in using an email address.
-2. User selects stocks to subscribe to.
-3. Server generates random stock price updates every second.
-4. Socket.IO broadcasts updates to connected clients.
-5. Dashboard updates in real time without refreshing.
-6. Each user sees only their subscribed stocks.
+### Real-Time Updates
+Socket.IO was used because it provides a simple way to push updates to the UI without polling or page refreshes.
 
----
+### Server-Side Simulation
+Stock prices are generated on the backend so the dashboard behaves like a live system while staying self-contained for evaluation.
 
-## Installation
+### User Isolation
+Each user maintains an independent subscription list, so updates for one session do not affect another.
 
-### Clone Repository
+### Simplicity Over Complexity
+The goal was to keep the implementation lightweight and focused on the assignment requirements while still making the dashboard feel complete.
+
+## Project Structure
+
+```text
+stock-dashboard/
+├── client/
+│   ├── src/
+│   └── package.json
+├── server/
+│   ├── server.js
+│   └── package.json
+└── README.md
+```
+
+## Setup
+
+### Clone the repository
 
 ```bash
 git clone <repository-url>
 cd stock-dashboard
 ```
 
-### Install Dependencies
-
-Backend:
+### Install backend dependencies
 
 ```bash
 cd server
 npm install
 ```
 
-Frontend:
+### Install frontend dependencies
 
 ```bash
 cd client
 npm install
 ```
 
----
+## Run the application
 
-## Running the Application
-
-### Start Backend
+### Start the backend
 
 ```bash
 cd server
 npm start
 ```
 
-Runs on:
-
+Backend runs at:
 ```text
 http://localhost:4000
 ```
 
-### Start Frontend
+### Start the frontend
 
 ```bash
 cd client
 npm run dev
 ```
 
-Runs on:
-
+Frontend runs at:
 ```text
 http://localhost:5173
 ```
 
----
+## Validation
 
-## Multi-User Support
-
-The application supports multiple simultaneous users.
-
-Example:
-
-**User A**
-
-* GOOG
-* TSLA
-
-**User B**
-
-* META
-* NVDA
-
-Both users receive live updates independently while maintaining separate watchlists.
-
----
-
-## Design Decisions
-
-### Socket.IO
-
-Used to provide efficient real-time communication without polling.
-
-### Server-Side Stock Simulation
-
-Stock prices are generated and updated on the server every second to satisfy assignment requirements.
-
-### User-Specific Watchlists
-
-Each user maintains an independent subscription list.
-
-### Lightweight Visualization
-
-Sparkline charts provide quick trend insights without requiring complex analytics infrastructure.
-
----
-
-## Project Structure
-
-```text
-stock-dashboard/
-│
-├── client/
-│   ├── src/
-│   └── package.json
-│
-├── server/
-│   ├── server.js
-│   └── package.json
-│
-└── README.md
-```
+The app was built to satisfy the following requirements:
+- email login,
+- support for five tickers,
+- subscription-based dashboard,
+- live updates without refresh,
+- multiple users,
+- independent watchlists,
+- asynchronous update flow.
 
 ## Screenshots
 
@@ -225,6 +182,15 @@ Select supported stocks to subscribe.
 
 ## Notes
 
-* No external stock APIs are used.
-* Prices are simulated for demonstration purposes.
-* Built as part of a Stock Broker Client Dashboard assignment to demonstrate real-time web application development using Socket.IO.
+- No external stock market API is used.
+- Prices are simulated for demonstration purposes.
+- The project is designed to show real-time frontend and backend integration in a compact implementation.
+
+## Future Improvements
+
+With more time, I would add:
+- real authentication,
+- persistent user sessions,
+- historical price storage,
+- websocket scaling for more users,
+- and integration with a real market data provider.
