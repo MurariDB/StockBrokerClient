@@ -206,10 +206,12 @@ stock-dashboard/
 ### Login Page
 
 User authentication using email login.
+screenshots/login.png
 
 ### Stock Selection
 
 Select supported stocks to subscribe.
+screenshots/stock-selection.png
 
 ### Live Dashboard
 
@@ -218,7 +220,7 @@ Select supported stocks to subscribe.
 * Sparkline charts
 * Theme controls
 * Live market feed
-
+screenshots/dashboard.png
 ---
 
 ## Notes
