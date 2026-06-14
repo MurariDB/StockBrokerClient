@@ -1,0 +1,12 @@
+# Ignore installed packages
+node_modules/
+stock-dashboard/client/node_modules/
+stock-dashboard/server/node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+*.log
