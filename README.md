@@ -199,29 +199,29 @@ stock-dashboard/
 └── README.md
 ```
 
----
-
 ## Screenshots
 
 ### Login Page
 
 User authentication using email login.
-screenshots/login.png
+
+![Login Page](screenshots/login.png)
 
 ### Stock Selection
 
 Select supported stocks to subscribe.
-screenshots/stock-selection.png
+
+![Stock Selection](screenshots/stock-selection.png)
 
 ### Live Dashboard
 
-* Real-time stock prices
-* Watchlist statistics
-* Sparkline charts
-* Theme controls
-* Live market feed
-screenshots/dashboard.png
----
+- Real-time stock prices
+- Watchlist statistics
+- Sparkline charts
+- Theme controls
+- Live market feed
+
+![Dashboard](screenshots/dashboard.png)
 
 ## Notes
 
