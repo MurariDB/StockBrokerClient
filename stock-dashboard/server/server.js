@@ -19,7 +19,7 @@ const server = http.createServer(app);
 // Allow cross-origin requests from React dev server
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"],
     methods: ["GET", "POST"],
   },
 });
@@ -40,10 +40,11 @@ let stockPrices = {
 };
 
 /**
- * userSubscriptions maps socket.id → Set of subscribed ticker symbols.
- * Each user independently tracks which stocks they want live updates for.
+ * Socket.IO rooms are used to manage subscriptions.
+ * Each ticker (e.g., "GOOG", "TSLA") is a room.
+ * When a client subscribes, they join the room; when they unsubscribe, they leave.
+ * Broadcasting to a room sends updates only to subscribed clients.
  */
-const userSubscriptions = {};
 
 // ─── Stock price simulator ────────────────────────────────────────────────────
 /**
@@ -57,8 +58,8 @@ function fluctuatePrice(currentPrice) {
 }
 
 /**
- * Every second: update all stock prices, then push only the relevant
- * stocks to each connected socket based on their subscriptions.
+ * Every second: update all stock prices, then broadcast updates to each
+ * ticker room. Only clients in that room receive the price update.
  */
 setInterval(() => {
   // Update every stock price
@@ -68,20 +69,14 @@ setInterval(() => {
 
   const updatedAt = new Date().toISOString();
 
-  // For each connected socket, send only their subscribed stocks
-  for (const [socketId, subscriptions] of Object.entries(userSubscriptions)) {
-    if (subscriptions.size === 0) continue;
-
-    const payload = {};
-    for (const ticker of subscriptions) {
-      payload[ticker] = {
+  // Broadcast each ticker's update to its room
+  for (const ticker of SUPPORTED_STOCKS) {
+    io.to(ticker).emit("stock_update", {
+      [ticker]: {
         price: stockPrices[ticker],
         updatedAt,
-      };
-    }
-
-    // Emit directly to this specific socket
-    io.to(socketId).emit("stock_update", payload);
+      },
+    });
   }
 }, 1000);
 
@@ -89,11 +84,9 @@ setInterval(() => {
 io.on("connection", (socket) => {
   console.log(`[+] Client connected: ${socket.id}`);
 
-  // Initialize an empty subscription set for this socket
-  userSubscriptions[socket.id] = new Set();
-
   /**
    * "subscribe" event: client wants to add a stock to their feed.
+   * Joins the ticker room so they receive updates for that stock.
    * Payload: { ticker: "GOOG" }
    */
   socket.on("subscribe", ({ ticker }) => {
@@ -101,7 +94,7 @@ io.on("connection", (socket) => {
       console.warn(`[!] Unknown ticker: ${ticker} from ${socket.id}`);
       return;
     }
-    userSubscriptions[socket.id].add(ticker);
+    socket.join(ticker);
     console.log(`[~] ${socket.id} subscribed to ${ticker}`);
 
     // Immediately send current price so the UI doesn't wait a full second
@@ -115,10 +108,11 @@ io.on("connection", (socket) => {
 
   /**
    * "unsubscribe" event: client removes a stock from their feed.
+   * Leaves the ticker room so they stop receiving updates for that stock.
    * Payload: { ticker: "TSLA" }
    */
   socket.on("unsubscribe", ({ ticker }) => {
-    userSubscriptions[socket.id]?.delete(ticker);
+    socket.leave(ticker);
     console.log(`[~] ${socket.id} unsubscribed from ${ticker}`);
   });
 
@@ -130,18 +124,22 @@ io.on("connection", (socket) => {
     socket.emit("supported_stocks", SUPPORTED_STOCKS);
   });
 
-  // Cleanup on disconnect
+  // Cleanup on disconnect - Socket.IO automatically removes from all rooms
   socket.on("disconnect", () => {
-    delete userSubscriptions[socket.id];
     console.log(`[-] Client disconnected: ${socket.id}`);
   });
 });
 
 // ─── Health check endpoint ────────────────────────────────────────────────────
 app.get("/health", (req, res) => {
+  const roomStats = {};
+  for (const ticker of SUPPORTED_STOCKS) {
+    roomStats[ticker] = io.sockets.adapter.rooms.get(ticker)?.size || 0;
+  }
   res.json({
     status: "ok",
-    connectedClients: Object.keys(userSubscriptions).length,
+    connectedClients: io.sockets.sockets.size,
+    subscriptionsByTicker: roomStats,
     currentPrices: stockPrices,
   });
 });
