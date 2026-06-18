@@ -9,7 +9,7 @@ import StockSelector from "./components/StockSelector";
 import Dashboard from "./components/Dashboard";
 import "./App.css";
 
-const SOCKET_SERVER = "http://localhost:4000";
+const SOCKET_SERVER = import.meta.env.VITE_SOCKET_SERVER || "http://localhost:4000";
 const SUPPORTED_STOCKS = ["GOOG", "TSLA", "AMZN", "META", "NVDA"];
 
 function App() {
