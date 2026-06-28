@@ -8,13 +8,20 @@
  * - Broadcast price updates only to subscribed clients
  */
 
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const mongoose = require("mongoose");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 const server = http.createServer(app);
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((error) => console.error("❌ Error connecting to MongoDB:", error));
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
@@ -30,6 +37,8 @@ const io = new Server(server, {
 
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
+
+app.use("/api/auth", authRoutes);
 
 // ─── Supported tickers ───────────────────────────────────────────────────────
 const SUPPORTED_STOCKS = ["GOOG", "TSLA", "AMZN", "META", "NVDA"];
@@ -84,6 +93,20 @@ setInterval(() => {
   }
 }, 1000);
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error("Authentication required."));
+  }
+  try {
+    const jwt = require("jsonwebtoken");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.user = decoded;
+    next();
+  } catch (err) {
+    return next(new Error("Invalid or expired token."));
+  }
+});
 // ─── Socket.IO event handlers ─────────────────────────────────────────────────
 io.on("connection", (socket) => {
   console.log(`[+] Client connected: ${socket.id}`);
@@ -154,3 +177,4 @@ server.listen(PORT, () => {
   console.log(`\n🚀 Stock Dashboard Server running on http://localhost:${PORT}`);
   console.log(`   Streaming: ${SUPPORTED_STOCKS.join(", ")}\n`);
 });
+ 
