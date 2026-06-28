@@ -1,7 +1,3 @@
-/**
- * App.jsx — Root Component (copied)
- */
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { io } from "socket.io-client";
 import Login from "./components/Login";
@@ -25,41 +21,37 @@ function App() {
     return "dark";
   });
   const [step, setStep] = useState("login");
-  // Persist subscriptions per-email in localStorage under `subs:<email>`
+
   function persistSubscriptionsFor(emailKey, subsSet) {
     if (!emailKey) return;
     try {
       const arr = Array.from(subsSet || []);
       localStorage.setItem(`subs:${emailKey}`, JSON.stringify(arr));
-    } catch (err) {
-      // ignore storage errors
-    }
+    } catch (err) {}
   }
 
+  // Theme effect
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try {
       localStorage.setItem("theme", theme);
-    } catch (err) {
-      // ignore storage failures
-    }
+    } catch (err) {}
   }, [theme]);
 
-  const toggleTheme = useCallback(() => {
-    setTheme((current) => (current === "dark" ? "light" : "dark"));
-  }, []);
+  // Socket effect — runs when email changes
   useEffect(() => {
     if (!email) return;
+
+    const token = localStorage.getItem("token"); // get JWT token
     const newSocket = io(SOCKET_SERVER, {
       transports: ["websocket"],
       reconnectionAttempts: 5,
       reconnectionDelay: 1500,
+      auth: { token }, // send token with connection
     });
 
     newSocket.on("connect", () => {
       setConnected(true);
-
-      // on connect, re-apply any saved subscriptions for this email
       try {
         const raw = localStorage.getItem(`subs:${email}`);
         if (raw) {
@@ -67,26 +59,21 @@ function App() {
           setSubscriptions(new Set(arr));
           arr.forEach((t) => newSocket.emit("subscribe", { ticker: t }));
         }
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     });
 
     newSocket.on("disconnect", () => setConnected(false));
+
     newSocket.on("stock_update", (payload) => {
       setStockData((prev) => {
         const next = { ...prev };
         Object.entries(payload).forEach(([ticker, incoming]) => {
           const existing = prev[ticker] || { history: [] };
           const history = [
-            ...((existing.history && Array.isArray(existing.history)) ? existing.history : []),
+            ...(Array.isArray(existing.history) ? existing.history : []),
             { price: incoming.price, updatedAt: incoming.updatedAt },
           ].slice(-20);
-          next[ticker] = {
-            ...existing,
-            ...incoming,
-            history,
-          };
+          next[ticker] = { ...existing, ...incoming, history };
         });
         return next;
       });
@@ -100,22 +87,22 @@ function App() {
     };
   }, [email]);
 
+  const toggleTheme = useCallback(() => {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }, []);
+
   const handleLogin = useCallback((userEmail) => {
     setEmail(userEmail);
-    // preload persisted subscriptions so selector shows previous choices
     try {
       const raw = localStorage.getItem(`subs:${userEmail}`);
       if (raw) setSubscriptions(new Set(JSON.parse(raw || "[]")));
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
     setStep("select");
   }, []);
 
   const handleToggleSubscription = useCallback(
     (ticker) => {
       if (!socket) return;
-
       setSubscriptions((prev) => {
         const next = new Set(prev);
         if (next.has(ticker)) {
@@ -130,10 +117,7 @@ function App() {
           next.add(ticker);
           socket.emit("subscribe", { ticker });
         }
-
-        // persist current selection for this user
         persistSubscriptionsFor(email, next);
-
         return next;
       });
     },
@@ -142,14 +126,21 @@ function App() {
 
   const handleGoToDashboard = useCallback(() => setStep("dashboard"), []);
   const handleEditSubscriptions = useCallback(() => setStep("select"), []);
-  const handleLogout = useCallback(() => { setEmail(null); setSubscriptions(new Set()); setStockData({}); setStep("login"); }, []);
+  const handleLogout = useCallback(() => {
+    setEmail(null);
+    setSubscriptions(new Set());
+    setStockData({});
+    setStep("login");
+  }, []);
 
   const watchlistStats = useMemo(() => {
     const tickers = Array.from(subscriptions);
     const priced = tickers
       .map((ticker) => ({ ticker, price: stockData[ticker]?.price }))
       .filter((item) => typeof item.price === "number");
-    const average = priced.length ? priced.reduce((sum, item) => sum + item.price, 0) / priced.length : 0;
+    const average = priced.length
+      ? priced.reduce((sum, item) => sum + item.price, 0) / priced.length
+      : 0;
     const sorted = priced.slice().sort((a, b) => b.price - a.price);
     return {
       count: tickers.length,

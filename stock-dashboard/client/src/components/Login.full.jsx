@@ -1,33 +1,63 @@
-// Copied Login.jsx
-
 import React, { useState } from "react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 function Login({ onLogin }) {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const trimmed = email.trim().toLowerCase();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
 
-    if (!trimmed) {
-      setError("Please enter your email address.");
+    // Validate
+    if (!trimmedEmail || !trimmedPassword) {
+      setError("Please enter both email and password.");
       return;
     }
-    if (!EMAIL_RE.test(trimmed)) {
+    if (!EMAIL_RE.test(trimmedEmail)) {
       setError("That doesn't look like a valid email.");
+      return;
+    }
+    if (trimmedPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
     setError("");
     setLoading(true);
 
-    setTimeout(() => {
-      onLogin(trimmed);
-    }, 500);
+    try {
+      const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Something went wrong.");
+        setLoading(false);
+        return;
+      }
+
+      // Store JWT token in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("email", data.email);
+
+      onLogin(data.email);
+
+    } catch (err) {
+      setError("Could not connect to server. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -62,12 +92,25 @@ function Login({ onLogin }) {
               type="email"
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) setError("");
-              }}
+              onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
               autoComplete="email"
               autoFocus
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              className={`form-input ${error ? "form-input--error" : ""}`}
+              type="password"
+              placeholder="Min. 6 characters"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
+              autoComplete={isRegister ? "new-password" : "current-password"}
               disabled={loading}
             />
             {error && <span className="form-error">{error}</span>}
@@ -76,18 +119,24 @@ function Login({ onLogin }) {
           <button
             className="btn-primary"
             type="submit"
-            disabled={loading || !email.trim()}
+            disabled={loading || !email.trim() || !password.trim()}
           >
             {loading ? (
               <span className="btn-spinner" />
             ) : (
-              "Enter dashboard →"
+              isRegister ? "Create account →" : "Enter dashboard →"
             )}
           </button>
         </form>
 
         <p className="login-footer">
-          No password needed — just your email to identify your session.
+          {isRegister ? "Already have an account? " : "Don't have an account? "}
+          <button
+            className="btn-link"
+            onClick={() => { setIsRegister(!isRegister); setError(""); }}
+          >
+            {isRegister ? "Sign in" : "Register"}
+          </button>
         </p>
       </div>
 
